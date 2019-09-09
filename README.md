@@ -61,7 +61,7 @@ TDD 的原理是在开发功能代码之前，先编写单元测试用例代码
 
 在说Jest测试之前，先来看看我们以前是怎么样测试的：
 
-```
+```js
 // name=lzr&age=20 => {name: lzr, age: 20} 
 const parser = str => {
 	const obj = {}; 
