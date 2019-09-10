@@ -60,15 +60,78 @@ TDD 的原理是在开发功能代码之前，先编写单元测试用例代码
 ## 1.2 Jest 的核心应用
 
 在说Jest测试之前，先来看看我们以前是怎么样测试的：
-
 ```js
-// name=lzr&age=20 => {name: lzr, age: 20} 
+// name=lzr&age=20 => {name: 'lzr', age: '20'} 
 const parser = str => {
 	const obj = {}; 
-	str.replace(/([^=&]+)=([^=&]+)/g, () => {
+	str.replace(/([^=&]+)=([^=&]+)/g, function() {
 		obj[arguments[1]] = arguments[2];
 	});
 	return obj;
 }
+
+// {name: 'lzr', age: 20} => name=lzr&age=20 
+const stringify = obj => {
+  const arr = []
+
+  Reflect.ownKeys(obj).forEach(key => {
+    arr.push(`${key}=${obj[key]}`);
+  })
+  return arr.join("&");
+}
+
+console.log(parser('name=lzr&age=20'));
+console.log(stringify({name: 'lzr', age: 20}));
+```
+但是 `console` 不能出现在正式环境代码中保留，所以我们可以引入测试代码
+
+### 1.2.1 分组、用例
+
+```js
+// it 用例
+
+it('测试parser是否能解析数据', () => {
+  // 断言
+  expect(parser("name=lzr&age=20")).toEqual({name:'lzr', age: "20"})
+}) 
+
+```
+```js
+// describe 是分组
+
+describe('测试qs库是否合法', () => {
+  it('测试parser是否能解析数据', () => {
+    // 断言
+    // toEqual 对象相等
+    expect(parser("name=lzr&age=20")).toEqual({name:'lzr', age: "20"})
+  }) 
+})
+```
+
+### 1.2.2 matchers 匹配器
+
+按照匹配器的分类不同，我们将常见api分为 <strong>相等、不相等、包含</strong> 三类。
+
+```js
+
+it('测试两个人是否全等', () => {
+  expect(1+1).toBe(2); // js 中的 ===
+  expect({ name: 1 }).toEqual({ name: 1 });
+  expect(true).toBeTruthy();
+  expect(false).toBeFalsy();
+})
+
+
+it('测试不相等', () => {
+  expect(1+1).not.toBe(3); 
+  expect(3).toBeLessThan(5);
+  expect(10).toBeGreaterThan(5);
+})
+
+it('测试包含', () => {
+  expect('hello world').toContain('hello'); 
+  expect('hello world').toMatch(/hello/); 
+})
+
 ```
 
