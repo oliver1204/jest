@@ -365,9 +365,10 @@ describe('测试 HelloWorld 组件', () => {
       propsData: {
         msg: 'hello'
       }
-    }).$mount();
+    }).$mount(); // 默认挂载到vm.$el,也可以指定真实节点如：$mount(#app)
 
-    expect(vm.$el.innerHTML).toContain('hello')
+    expect(vm.$el.innerHTML).toContain('hello')；
+    vm.$destroy(); 消除 组件挂载
   })
 })
 ```
@@ -386,10 +387,8 @@ describe('测试 HelloWorld 组件', () => {
         msg: 'hello'
       }
     })
-
-
+    expect(wrapper.find('h1').text()).toMatch(/hello/);
   })
 })
 ```
-
 
