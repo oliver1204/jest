@@ -134,4 +134,262 @@ it('测试包含', () => {
 })
 
 ```
+### 1.2.3 测试操作节点方法
+
+```js
+// dom.js
+
+export const removeNode = node => {
+  node.parentNode.removeChild(node);
+}
+
+// dom.spec.js
+import { removeNode } from './2.dom.js';
+
+it('测试能否删除元素 removeNode', () => {
+  document.body.innerHTML = '<div><button></button></div>'; // 非真实的dom ,是jest虚拟的dom
+  let button = document.querySelector('button');
+  expect(button).not.toBe(null);
+
+  removeNode(button);
+
+  button = document.querySelector('button');
+  expect(button).toBe(null);
+})
+
+```
+
+# 2. 前端自动化测试进阶
+### 1. 测试异步方法
+
+提到异步无非就是两种情况，一种是回调函数的方式，一种就是现在流行的promise方式
+
+```js
+// js
+
+export const getDataThroughCallback = fn => {
+  setTimeout(() => {
+    fn({ name: "lzr" });
+  }, 1000);
+};
+
+// spec.js
+import { getDataThroughCallback } from '../3.async.js';
+
+it('测试 传人Callback是否能拿到最终结果', (done) => {
+  expect.assertions(1)
+  getDataThroughCallback(data => {
+    expect(data).toEqual({ name: "lzr" });
+    done(); // 标识调用完成
+  })
+})
+```
+
+```js
+
+//js
+export const getDataThroughPromise = () => {
+  return new Promise((resolve, reject) => {
+    setTimeout(() => {
+      resolve({ name: "lzr" });
+    }, 1000);
+  });
+};
+
+// import { getDataThroughPromise } from '../3.async.js';
+it.only('测试 传人Promise是否能拿到最终结果', async () => {
+  expect.assertions(1)
+  
+  let data = await getDataThroughPromise()
+  expect(data).toEqual({ name: "lzr" });
+})
+```
+
+### 2. Jest 中的 mock
+
+* 2.1 模拟函数jest.fn()
+* 2.2 模拟文件jest.mock()
+* 2.3 模拟Timer
+
+参考 4.mock.js 文件
+
+### 3. Jest 中的钩子函数
+
+为了测试的便利，Jest 中也提供了类似vue一样的钩子函数，可以在执行测试用例前或者后执行
+
+```js
+class Counter {
+  constructor() {
+    this.count = 0;
+  }
+  add(count) {
+    this.count += count;
+  }
+}
+module.exports = Counter;
+```
+
+我们要测试 Counter 类中的 add 方法是否符合预期，来编写测试用例
+
+```js
+import Counter from './hook';
+
+it('测试 Counter 增加 1 的功能', () => {
+  let counter = new Counter; // 每个测试用例都需要创建一个counter实例，防止相互影响
+  counter.add(1);
+  expect(counter.count).toBe(1)
+})
+
+it('测试 Counter 增加 2 的功能', () => {
+  let counter = new Counter; // 每个测试用例都需要创建一个counter实例，防止相互影响
+  counter.add(2);
+  expect(counter.count).toBe(2)
+})
+
+```
+
+我们发现每个测试用例都需要基于一个新的counter实例来测试，防止测试用例间的相互影响，这时候我们可以把重复的逻辑放到钩子中！
+
+Jest 为我们提供了四个测试用例的钩子：<strong>beforeAll()、afterAll()、beforeEach()、afterEach()</strong>。
+
+* beforeAll() 和 afterAll() 会在所有测试用例之前和所有测试用例之后执行一次。
+* beforeEach() 和 afterEach() 会在每个测试用例之前和之后执行。
+
+```js
+import Counter from './hook';
+
+let counter = null;
+
+beforeAll(() => {
+  console.log('before All');
+})
+
+afterAll(() => {
+  console.log('after All');
+})
+
+beforeEach(() => {
+  console.log('before Each');
+  let counter = new Counter;
+})
+
+afterEach(() => {
+  console.log('after Each');
+})
+
+```
+
+### 4. Jest 中的配置文件
+
+参考 vue-project 中的 `jest.config.js` 文件。
+
+### 5. Jest覆盖率
+
+首先在命令行 `$ npx jest --init`，生产jest.config.js 文件。
+
+然后在 package.json, 的 script 属性下添加 `"test": "jest --coverage" `。
+
+# 3. Vue 中集成 Jest
+
+我们可以通过 vue 官网提供的@vue/cli 直接创建vue项目，在创建前需要先安装好@vue/cli
+
+这里直接创建项目：
+
+```js
+vue create vue-unit-project 
+```
+
+```js
+? Please pick a preset: 
+  default (babel, eslint) 
+❯ Manually select features // 手动选择
+```
+
+```js
+? Check the features needed for your project: 
+❯◉ Babel
+ ◯ TypeScript
+ ◯ Progressive Web App (PWA) Support
+ ◉ Router
+ ◉ Vuex
+ ◯ CSS Pre-processors
+ ◯ Linter / Formatter
+ ◉ Unit Testing
+ ◯ E2E Testing
+```
+都选择完成后回车，初始化成功后，我们先来查看项目文件，因为我们主要关注的是测试，所以先来查看下 `jest.config.js` 文件（具体见备注）。
+
+通过配置文件的查看我们知道了所有测试豆子啊tests/unit 目录下。
+
+我们可以查看 package.json 来执行对应的测试命令。
+
+```js
+"scripts": {
+    "serve": "vue-cli-service serve",
+    "build": "vue-cli-service build",
+    "test:unit": "vue-cli-service test:unit --watch" // 这里添加了一个 --watch 参数
+},
+
+```
+
+# 4. Vue 组件测试
+
+### 1. 测试 HelloWorld 组件
+
+```js
+<template>
+  <div class="hello">
+    <h1>{{ msg }}</h1>
+  </div>
+</template>
+
+<script>
+export default {
+  name: 'HelloWorld',
+  props: {
+    msg: String
+  }
+}
+</script>
+
+```
+
+HelloWorld 组件需要提供一个msg属性，将msg属性渲染到h1标签中，测试代码：
+
+```js
+describe('测试 HelloWorld 组件', () => {
+  it('传人msg属性，能否渲染到h1标签内', () => {
+    const baseExtend = Vue.extend(HelloWorld);
+    // 获取当前组件的构造函数，并且挂载次组件
+    const vm = new baseExtend({
+      propsData: {
+        msg: 'hello'
+      }
+    }).$mount();
+
+    expect(vm.$el.innerHTML).toContain('hello')
+  })
+})
+```
+
+这样一个简单的vue 组件就测试成功了，但是写起来感觉不简洁也不方便！所以为了更方便的测试vue官方提供给我们了个测试工具 Vue Test Utils,而这个工具为了方便应用，采用了同步的更新策略
+
+```js
+import HelloWorld from '@/components/HelloWorld';
+import Vue from 'vue';
+import { shallowMount } from '@vue/test-utils';
+
+describe('测试 HelloWorld 组件', () => {
+  it('传人msg属性，能否渲染到h1标签内', () => {
+    const wrapper = shallowMount(HelloWorld, {
+      propsData: {
+        msg: 'hello'
+      }
+    })
+
+
+  })
+})
+```
+
 
